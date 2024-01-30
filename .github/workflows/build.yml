@@ -60,9 +60,14 @@ jobs:  # 工作流程中的任务
         name: apk  # 设置上传文件的名称为apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/  # 设置上传文件的路径
         
-    - name: Upload APK to Release
+        
+    - name: Set version and build time  # 设置版本和构建时间
+      run: echo "VERSION_TIME=$(git describe --tags)-$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV  # 创建一个新的环境变量VERSION_TIME，其值为版本号和构建时间
+
+    - name: Upload APK to Release  # 将APK上传到Release
       uses: svenstaro/upload-release-action@v2  # 使用svenstaro/upload-release-action操作将APK上传到GitHub Release
       with:
         file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/*.apk  # 设置上传文件的路径
         tag: ${{ github.ref }}  # 设置上传文件的标签为当前的git引用
+        name: ${{ env.VERSION_TIME }}.apk  # 设置上传文件的名称为环境变量VERSION_TIME的值
         file_glob: true  # 允许使用通配符匹配文件名
