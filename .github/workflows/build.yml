@@ -1,71 +1,68 @@
-name: Build APK
+name: Build APK  # 工作流程的名称
 
-on:
-  push:
-  workflow_dispatch:
+on:  # 触发工作流程的事件
+  push:  # 当有新的提交推送到仓库时触发
+  workflow_dispatch:  # 允许手动触发工作流程
     inputs:
-      XRAY_CORE_VERSION:
-        description: 'Xray core version or commit hash'
-        required: false
+      XRAY_CORE_VERSION:  # 输入参数，用于指定Xray core的版本或提交哈希
+        description: 'Xray core version or commit hash'  # 参数描述
+        required: false  # 参数是否必需
 
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
+jobs:  # 工作流程中的任务
+  build:  # 任务名称
+    runs-on: ubuntu-latest  # 任务运行的环境
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    steps:  # 任务中的步骤
+    - name: Checkout code  # 步骤名称
+      uses: actions/checkout@v3  # 使用actions/checkout操作来检出代码
       
-    - name: Setup Java
+    - name: Setup Java  # 设置Java环境
       uses: actions/setup-java@v3
       with:
-        distribution: 'temurin'
-        java-version: '17'
+        distribution: 'temurin'  # 使用temurin发行版
+        java-version: '17'  # 使用Java 17
 
-    - name: Setup Golang
+    - name: Setup Golang  # 设置Golang环境
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21.4'
+        go-version: '1.21.4'  # 使用Golang 1.21.4
 
-    - name: Install gomobile
-      run: |
-        go install golang.org/x/mobile/cmd/gomobile@latest
-        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+    - name: Install gomobile  # 安装gomobile
+      run: |  # 运行命令
+        go install golang.org/x/mobile/cmd/gomobile@latest  # 安装最新版本的gomobile
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH  # 将GOPATH的bin目录添加到PATH中
 
-
-    - name: Setup Android environment
+    - name: Setup Android environment  # 设置Android环境
       uses: android-actions/setup-android@v2
-  
 
-    - name: Build dependencies
+    - name: Build dependencies  # 构建依赖
       run: |
-        mkdir ${{ github.workspace }}/build
-        cd ${{ github.workspace }}/build
-        git clone --depth=1 -b main https://github.com/bian2022/AndroidLibXrayLite.git
-        cd AndroidLibXrayLite
-        go get github.com/xtls/xray-core@${{ github.event.inputs.XRAY_CORE_VERSION }} || true
-        gomobile init
-        go mod tidy -v
-        gomobile bind -v -androidapi 19 -ldflags='-s -w' ./
-        cp *.aar ${{ github.workspace }}/V2rayNG/app/libs/
+        mkdir ${{ github.workspace }}/build  # 创建一个新的目录用于构建
+        cd ${{ github.workspace }}/build  # 进入新创建的目录
+        git clone --depth=1 -b main https://github.com/bian2022/AndroidLibXrayLite.git  # 克隆一个库
+        cd AndroidLibXrayLite  # 进入克隆的库的目录
+        go get github.com/xtls/xray-core@${{ github.event.inputs.XRAY_CORE_VERSION }} || true  # 获取一个特定版本的库
+        gomobile init  # 初始化gomobile
+        go mod tidy -v  # 整理依赖
+        gomobile bind -v -androidapi 19 -ldflags='-s -w' ./  # 构建gomobile库
+        cp *.aar ${{ github.workspace }}/V2rayNG/app/libs/  # 将构建的库复制到项目的libs目录
 
-    - name: Build APK
+    - name: Build APK  # 构建APK
       run: |
-        cd ${{ github.workspace }}/V2rayNG
-        chmod 777 *
-        sed -i 's/org.gradle.jvmargs=-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8/org.gradle.jvmargs=-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8/' ${{ github.workspace }}/V2rayNG/gradle.properties
-        ./gradlew assembleDebug
+        cd ${{ github.workspace }}/V2rayNG  # 进入项目目录
+        chmod 777 *  # 修改文件权限
+        sed -i 's/org.gradle.jvmargs=-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8/org.gradle.jvmargs=-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8/' ${{ github.workspace }}/V2rayNG/gradle.properties  # 修改gradle配置文件
+        ./gradlew assembleDebug  # 构建APK
 
-    - name: Upload APK to Artifacts
-      uses: actions/upload-artifact@v3
+    - name: Upload APK to Artifacts  # 将APK上传到Artifacts
+      uses: actions/upload-artifact@v3  # 使用GitHub Actions的upload-artifact操作将APK上传到工作流程的Artifacts
       with:
-        name: apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/
+        name: apk  # 设置上传文件的名称为apk
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/  # 设置上传文件的路径
         
     - name: Upload APK to Release
-      uses: svenstaro/upload-release-action@v2
+      uses: svenstaro/upload-release-action@v2  # 使用svenstaro/upload-release-action操作将APK上传到GitHub Release
       with:
-        file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/*.apk
-        tag: ${{ github.ref }}
-        file_glob: true
+        file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/debug/*.apk  # 设置上传文件的路径
+        tag: ${{ github.ref }}  # 设置上传文件的标签为当前的git引用
+        file_glob: true  # 允许使用通配符匹配文件名
