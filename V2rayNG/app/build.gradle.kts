@@ -8,11 +8,11 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.v2ray.ang"
+        applicationId = "com.hicorenational.antifraud"
         minSdk = 21
         targetSdk = 34
         versionCode = 558
-        versionName = "1.8.22"
+        versionName = "1.8.22.2024.5"
         multiDexEnabled = true
     }
 
